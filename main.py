@@ -130,7 +130,6 @@ async def runner(config, config_path, vtb_details, last_time, file_list):
                 bili_id = account['id']
                 if bili_id not in config['ban_list']:
                     await get_dyn(bili_id, last_time, browser, name, config, file_list)
-                    print(file_list)
                     time.sleep(10)
     browser.close()
 

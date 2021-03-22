@@ -3,5 +3,14 @@
     "exclude_types":[1],
     "ban_list":[],
     "enable_filter":true,
-    "content_filter":["出道","首播","纪念","生日","新衣","模型","衣服","新版","联动","毕业","第一次","百舰","千舰","百粉","千粉","万粉","告别","再见"]
+    "content_filter":["出道","首播","纪念","生日","新衣","模型","衣服","新版","联动","毕业","第一次","百舰","千舰","百船","千船","百粉","千粉","万粉","告别","再见"],
+    "email":{
+        "enable":false,
+        "sender":"",
+        "receiver":[""],
+        "smtpserver":"",
+        "username":"",
+        "password":"",
+        "keep_images_after_sent":true
+    }
 }

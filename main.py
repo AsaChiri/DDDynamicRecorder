@@ -131,7 +131,7 @@ async def runner(config, config_path, vtb_details, last_time, file_list):
                 if bili_id not in config['ban_list']:
                     await get_dyn(bili_id, last_time, browser, name, config, file_list)
                     time.sleep(10)
-    browser.close()
+    await browser.close()
 
 
 def main():
@@ -165,6 +165,8 @@ def main():
             vtb_list = new_list
             if "vtbs" in vtb_list:
                 vtb_details = vtb_list['vtbs']
+                asyncio.run(runner(config, config_path,
+                                    vtb_details, last_time, file_list))
                 if config.get("email", {}).get("enable", False):
                     mail_config = config.get("email", {})
                     sendmail(mail_config.get("sender", ""), mail_config.get("receiver", []), mail_config.get(
@@ -173,8 +175,7 @@ def main():
                         for ip in file_list:
                             os.remove(ip)
                 file_list.clear()
-                asyncio.run(runner(config, config_path,
-                                    vtb_details, last_time, file_list))
+                
         else:
             time.sleep(10)
 

@@ -36,12 +36,11 @@ def content_filter(content, filter_list):
     return False
 
 
-async def get_dyn(uid, last_time, browser, default_name, config):
-    file_list = []
+async def get_dyn(uid, last_time, browser, default_name, config, file_list):
     api = BiliAPI()
     dynamics = (await api.get_dynamic(uid)).get('cards', [])
     if len(dynamics) == 0:  # 没有发过动态或者动态全删的直接结束
-        return file_list
+        return
 
     if uid not in last_time:  # 没有爬取过这位主播就把最新一条动态时间为 last_time
         dynamic = Dynamic(dynamics[0],
@@ -54,7 +53,7 @@ async def get_dyn(uid, last_time, browser, default_name, config):
             last_time[uid] = dynamic.time
         else:
             last_time[uid] = int(datetime.now().timestamp())
-        return file_list
+        return
 
     for dynamic in dynamics[::-1]:  # 从旧到新取最近5条动态
         dynamic = Dynamic(dynamic, default_name, config['data_path'])
@@ -64,7 +63,6 @@ async def get_dyn(uid, last_time, browser, default_name, config):
                     await dynamic.get_screenshot(browser)
                     file_list.append(dynamic.img_path)
             last_time[uid] = dynamic.time
-    return file_list
 
 
 def dd_b64(param):
@@ -109,7 +107,35 @@ def sendmail(sender, receiver, smtpserver, username, password, img_lists):
     smtpObj.quit()
 
 
-async def main():
+async def runner(config, config_path, vtb_details, last_time, file_list):
+    browser = await launch(args=['--no-sandbox'])
+    for vtb in vtb_details:
+        new_config = None
+        try:
+            with open(config_path, "r", encoding="utf-8") as f:
+                new_config = json.load(f)
+        except Exception as e:
+            print("错误！")
+            print("错误详情："+str(e))
+            new_config = None
+        if new_config:
+            config = new_config
+        if not os.path.exists(config['data_path']):
+            os.makedirs(config['data_path'])
+
+        name = vtb['name'][vtb['name']['default']]
+        accounts = vtb['accounts']
+        for account in accounts:
+            if account['platform'] == 'bilibili':
+                bili_id = account['id']
+                if bili_id not in config['ban_list']:
+                    await get_dyn(bili_id, last_time, browser, name, config, file_list)
+                    print(file_list)
+                    time.sleep(10)
+    browser.close()
+
+
+def main():
     vtb_list = {}
     last_time_path = "last_time.json"
     config = {}
@@ -132,50 +158,27 @@ async def main():
         print("错误！")
         print("错误详情："+str(e))
         os.system('pause')
-    browser = await launch(args=['--no-sandbox'])
-    fl = []
+
+    file_list = []
     while True:
         new_list = get_vdb_list()
-        try:
-            if new_list:
-                vtb_list = new_list
-                if "vtbs" in vtb_list:
-                    vtb_details = vtb_list['vtbs']
-                    if config.get("email", {}).get("enable", False):
-                        mail_config = config.get("email", {})
-                        sendmail(mail_config.get("sender", ""), mail_config.get("receiver", []), mail_config.get(
-                            "smtpserver", ""), mail_config.get("username", ""), mail_config.get("password", ""), fl)
-                        if not mail_config.get("keep_images_after_sent", True):
-                            for ip in fl:
-                                os.remove(ip)
-                    fl.clear()
-                    for vtb in vtb_details:
-                        new_config = None
-                        try:
-                            with open(config_path, "r", encoding="utf-8") as f:
-                                new_config = json.load(f)
-                        except Exception as e:
-                            print("错误！")
-                            print("错误详情："+str(e))
-                            new_config = None
-                        if new_config:
-                            config = new_config
-                        if not os.path.exists(config['data_path']):
-                            os.makedirs(config['data_path'])
+        if new_list:
+            vtb_list = new_list
+            if "vtbs" in vtb_list:
+                vtb_details = vtb_list['vtbs']
+                if config.get("email", {}).get("enable", False):
+                    mail_config = config.get("email", {})
+                    sendmail(mail_config.get("sender", ""), mail_config.get("receiver", []), mail_config.get(
+                        "smtpserver", ""), mail_config.get("username", ""), mail_config.get("password", ""), file_list)
+                    if not mail_config.get("keep_images_after_sent", True):
+                        for ip in file_list:
+                            os.remove(ip)
+                file_list.clear()
+                asyncio.run(runner(config, config_path,
+                                    vtb_details, last_time, file_list))
+        else:
+            time.sleep(10)
 
-                        name = vtb['name'][vtb['name']['default']]
-                        accounts = vtb['accounts']
-                        for account in accounts:
-                            if account['platform'] == 'bilibili':
-                                bili_id = account['id']
-                                if bili_id not in config['ban_list']:
-                                    afl = await get_dyn(bili_id, last_time, browser, name, config)
-                                    fl.extend(afl)
-                                    time.sleep(10)
-            else:
-                time.sleep(10)
-        except KeyboardInterrupt:
-            browser.close()
 
 if __name__ == '__main__':
-    asyncio.run(main())
+    main()

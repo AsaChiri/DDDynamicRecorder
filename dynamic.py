@@ -4,6 +4,7 @@ import traceback
 from os import path
 import logging
 import json
+from retrying import retry
 
 class Dynamic():
     def __init__(self, dynamic, default_name, data_path="./data"):
@@ -36,7 +37,7 @@ class Dynamic():
             self.content = card['vest']['content']
         else:
             self.content = ""
-            
+
     @retry(stop_max_attempt_number=5, wait_random_min=5000, wait_random_max=10000)
     async def get_screenshot(self, browser):
         if path.isfile(self.img_path):

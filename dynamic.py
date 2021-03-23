@@ -36,7 +36,8 @@ class Dynamic():
             self.content = card['vest']['content']
         else:
             self.content = ""
-
+            
+    @retry(stop_max_attempt_number=5, wait_random_min=5000, wait_random_max=10000)
     async def get_screenshot(self, browser):
         if path.isfile(self.img_path):
             return

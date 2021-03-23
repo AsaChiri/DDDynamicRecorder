@@ -37,7 +37,7 @@ def content_filter(content, filter_list):
             return True
     return False
 
-
+@retry(stop_max_attempt_number=5, wait_random_min=5000, wait_random_max=10000)
 async def get_dyn(uid, last_time, browser, default_name, config, file_list):
     api = BiliAPI()
     dynamics = (api.get_dynamic(uid)).get('cards', [])

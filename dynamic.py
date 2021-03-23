@@ -54,5 +54,6 @@ class Dynamic():
                 break
             except:
                 logging.error(traceback.format_exc())
-                await asyncio.sleep(0.1)
+                await asyncio.sleep(1)
+        await asyncio.sleep(10)
         await page.close()

@@ -18,6 +18,8 @@ from tinydb_dict import TinyDBDict
 from dynamic import Dynamic
 from utils import BiliAPI
 
+import nest_asyncio
+nest_asyncio.apply()
 
 def get_vdb_list():
     vdb_list_url = "https://vdb.vtbs.moe/json/list.json"

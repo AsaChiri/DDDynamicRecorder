@@ -38,7 +38,7 @@ def content_filter(content, filter_list):
 
 async def get_dyn(uid, last_time, browser, default_name, config, file_list):
     api = BiliAPI()
-    dynamics = (await api.get_dynamic(uid)).get('cards', [])
+    dynamics = (api.get_dynamic(uid)).get('cards', [])
     if len(dynamics) == 0:  # 没有发过动态或者动态全删的直接结束
         return
 
@@ -130,17 +130,17 @@ async def runner(config, config_path, vtb_details, last_time, file_list):
                 bili_id = account['id']
                 if bili_id not in config['ban_list']:
                     await get_dyn(bili_id, last_time, browser, name, config, file_list)
-                    time.sleep(10)
+                    await asyncio.sleep(10)
     await browser.close()
 
 
-def main():
+async def main():
     vtb_list = {}
     last_time_path = "last_time.json"
     config = {}
     last_time = TinyDBDict(last_time_path)
     logfile_name = "Main_"+datetime.now().strftime('%Y-%m-%d_%H-%M-%S')+'.log'
-    logging.basicConfig(level=logging.INFO,
+    logging.basicConfig(level=logging.DEBUG,
                         format='%(asctime)s %(thread)d %(threadName)s %(filename)s[line:%(lineno)d] %(levelname)s %(message)s',
                         datefmt='%a, %d %b %Y %H:%M:%S',
                         handlers=[logging.FileHandler(os.path.join(logfile_name), "a", encoding="utf-8")])
@@ -165,8 +165,7 @@ def main():
             vtb_list = new_list
             if "vtbs" in vtb_list:
                 vtb_details = vtb_list['vtbs']
-                asyncio.run(runner(config, config_path,
-                                    vtb_details, last_time, file_list))
+                await runner(config, config_path, vtb_details, last_time, file_list)
                 if config.get("email", {}).get("enable", False):
                     mail_config = config.get("email", {})
                     sendmail(mail_config.get("sender", ""), mail_config.get("receiver", []), mail_config.get(
@@ -181,4 +180,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    asyncio.run(main())
